@@ -1,7 +1,7 @@
 /**
- * jigsaw.js - 5x5 Jigsaw Puzzle Engine for Khao Pun Birthday App
- * Generates 25 interlocking jigsaw puzzle pieces from pun.png,
- * supports Drag & Drop, Touch, Click Placement, Hints, and Snap Logic.
+ * jigsaw.js - 7x7 Jigsaw Puzzle Engine for Khao Pun Birthday App
+ * Supports 7x7 grid (49 pieces), any-slot placement, position swapping,
+ * return to tray, and completion detection ONLY when all pieces match their correct slots.
  */
 
 class JigsawEngine {
@@ -15,9 +15,8 @@ class JigsawEngine {
         this.onComplete = options.onComplete || function() {};
 
         this.pieces = [];
-        this.gridEdges = { h: [], v: [] }; // Stores tab orientations (+1, -1) for interlocking edges
+        this.gridEdges = { h: [], v: [] };
         this.selectedPiece = null;
-        this.placedCount = 0;
         this.totalPieces = this.rows * this.cols;
 
         this.img = new Image();
@@ -31,22 +30,19 @@ class JigsawEngine {
         this.createBoardSlots();
         this.renderPieces();
         this.shuffleTray();
-        this.updateProgress();
+        this.checkWinCondition();
 
         window.addEventListener('resize', () => this.handleResize());
     }
 
     calculateDimensions() {
-        // Measure board dimensions based on container or default responsive square
         const screenW = window.innerWidth;
         const screenH = window.innerHeight;
         const maxBoardSize = Math.min(screenW - 32, screenH * 0.50, 440);
         
-        // Maintain aspect ratio of original image
         this.boardWidth = maxBoardSize;
         this.boardHeight = maxBoardSize * (this.img.height / this.img.width);
         
-        // Clamp height for mobile screens
         if (this.boardHeight > screenH * 0.50) {
             this.boardHeight = screenH * 0.50;
             this.boardWidth = this.boardHeight * (this.img.width / this.img.height);
@@ -55,11 +51,10 @@ class JigsawEngine {
         this.pieceWidth = this.boardWidth / this.cols;
         this.pieceHeight = this.boardHeight / this.rows;
 
-        // Set CSS variables or direct styling on board
         this.boardContainer.style.width = `${this.boardWidth}px`;
         this.boardContainer.style.height = `${this.boardHeight}px`;
 
-        // Update Ghost Image preview (faint 0.05 opacity)
+        // Ghost Image preview (faint 0.05 opacity)
         const ghostImg = document.getElementById('ghost-image');
         if (ghostImg) {
             ghostImg.src = this.imageSrc;
@@ -70,7 +65,6 @@ class JigsawEngine {
     }
 
     generateInterlockingEdges() {
-        // Horizontal internal edges: (rows - 1) * cols
         this.gridEdges.h = [];
         for (let r = 0; r < this.rows - 1; r++) {
             this.gridEdges.h[r] = [];
@@ -79,7 +73,6 @@ class JigsawEngine {
             }
         }
 
-        // Vertical internal edges: rows * (cols - 1)
         this.gridEdges.v = [];
         for (let r = 0; r < this.rows; r++) {
             this.gridEdges.v[r] = [];
@@ -110,14 +103,12 @@ class JigsawEngine {
         }
     }
 
-    // Draw interlocking jigsaw tab path on Canvas
     drawJigsawPiecePath(ctx, w, h, topEdge, rightEdge, bottomEdge, leftEdge) {
         const tabSize = Math.min(w, h) * 0.22;
         
         ctx.beginPath();
         ctx.moveTo(0, 0);
 
-        // Top Edge
         if (topEdge === 0) {
             ctx.lineTo(w, 0);
         } else {
@@ -126,7 +117,6 @@ class JigsawEngine {
             ctx.lineTo(w, 0);
         }
 
-        // Right Edge
         if (rightEdge === 0) {
             ctx.lineTo(w, h);
         } else {
@@ -135,7 +125,6 @@ class JigsawEngine {
             ctx.lineTo(w, h);
         }
 
-        // Bottom Edge
         if (bottomEdge === 0) {
             ctx.lineTo(0, h);
         } else {
@@ -144,7 +133,6 @@ class JigsawEngine {
             ctx.lineTo(0, h);
         }
 
-        // Left Edge
         if (leftEdge === 0) {
             ctx.lineTo(0, 0);
         } else {
@@ -168,17 +156,15 @@ class JigsawEngine {
             for (let c = 0; c < this.cols; c++) {
                 const id = r * this.cols + c;
 
-                // Determine edges (-1, 0, 1)
                 const topEdge = (r === 0) ? 0 : -this.gridEdges.h[r - 1][c];
                 const bottomEdge = (r === this.rows - 1) ? 0 : this.gridEdges.h[r][c];
                 const leftEdge = (c === 0) ? 0 : -this.gridEdges.v[r][c - 1];
                 const rightEdge = (c === this.cols - 1) ? 0 : this.gridEdges.v[r][c];
 
-                // Create Canvas for piece
                 const canvas = document.createElement('canvas');
                 const canvasW = this.pieceWidth + padding * 2;
                 const canvasH = this.pieceHeight + padding * 2;
-                canvas.width = canvasW * 2; // HiDPI
+                canvas.width = canvasW * 2;
                 canvas.height = canvasH * 2;
                 canvas.className = 'jigsaw-piece';
                 canvas.style.width = `${canvasW}px`;
@@ -191,18 +177,15 @@ class JigsawEngine {
                 ctx.save();
                 ctx.translate(padding, padding);
 
-                // Clip path for jigsaw shape
                 this.drawJigsawPiecePath(ctx, this.pieceWidth, this.pieceHeight, topEdge, rightEdge, bottomEdge, leftEdge);
                 ctx.clip();
 
-                // Draw source image section
                 ctx.drawImage(
                     this.img,
                     c * sourceW, r * sourceH, sourceW, sourceH,
                     0, 0, this.pieceWidth, this.pieceHeight
                 );
 
-                // Draw subtle piece border highlight & shadow
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
@@ -213,6 +196,8 @@ class JigsawEngine {
                     id: id,
                     row: r,
                     col: c,
+                    currentBoardRow: null,
+                    currentBoardCol: null,
                     canvas: canvas,
                     padding: padding,
                     isPlaced: false,
@@ -227,7 +212,6 @@ class JigsawEngine {
 
     shuffleTray() {
         this.trayContainer.innerHTML = '';
-        // Shuffle pieces randomly
         const unplaced = this.pieces.filter(p => !p.isPlaced);
         const shuffled = [...unplaced].sort(() => Math.random() - 0.5);
 
@@ -246,8 +230,11 @@ class JigsawEngine {
         // Click to select
         el.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (piece.isPlaced) return;
-            this.selectPiece(piece);
+            if (this.selectedPiece === piece) {
+                this.selectPiece(null);
+            } else {
+                this.selectPiece(piece);
+            }
         });
 
         // Touch & Drag Support
@@ -255,7 +242,6 @@ class JigsawEngine {
         let startX, startY, origLeft, origTop;
 
         const onStart = (e) => {
-            if (piece.isPlaced) return;
             isDragging = true;
             this.selectPiece(piece);
 
@@ -263,7 +249,6 @@ class JigsawEngine {
             startX = pt.clientX;
             startY = pt.clientY;
 
-            // Float element to body during drag
             const rect = el.getBoundingClientRect();
             origLeft = rect.left;
             origTop = rect.top;
@@ -294,7 +279,6 @@ class JigsawEngine {
             const pieceCenterX = rect.left + rect.width / 2;
             const pieceCenterY = rect.top + rect.height / 2;
 
-            // Check if dropped near correct slot or any slot
             const boardRect = this.boardContainer.getBoundingClientRect();
             
             if (
@@ -303,23 +287,16 @@ class JigsawEngine {
                 pieceCenterY >= boardRect.top &&
                 pieceCenterY <= boardRect.bottom
             ) {
-                // Calculate target cell
-                const col = Math.floor((pieceCenterX - boardRect.left) / this.pieceWidth);
-                const row = Math.floor((pieceCenterY - boardRect.top) / this.pieceHeight);
+                let col = Math.floor((pieceCenterX - boardRect.left) / this.pieceWidth);
+                let row = Math.floor((pieceCenterY - boardRect.top) / this.pieceHeight);
 
-                // If correct cell OR within snap radius
-                const targetLeft = boardRect.left + (piece.col * this.pieceWidth) + this.pieceWidth / 2;
-                const targetTop = boardRect.top + (piece.row * this.pieceHeight) + this.pieceHeight / 2;
+                row = Math.max(0, Math.min(this.rows - 1, row));
+                col = Math.max(0, Math.min(this.cols - 1, col));
 
-                const dist = Math.hypot(pieceCenterX - targetLeft, pieceCenterY - targetTop);
-
-                if (dist < 50 || (row === piece.row && col === piece.col)) {
-                    this.placePieceInBoard(piece);
-                    return;
-                }
+                this.placePieceInSlot(piece, row, col);
+                return;
             }
 
-            // Return to tray if missed
             this.returnToTray(piece);
         };
 
@@ -337,119 +314,116 @@ class JigsawEngine {
             this.selectedPiece.canvas.classList.remove('selected');
         }
         this.selectedPiece = piece;
-        piece.canvas.classList.add('selected');
-        // Target slot glowing hint removed as requested
-    }
-
-    highlightTargetSlot(piece) {
-        this.boardContainer.querySelectorAll('.jigsaw-slot').forEach(s => s.classList.remove('target-hint'));
-        if (!piece) return;
-
-        const targetSlot = this.boardContainer.querySelector(`.jigsaw-slot[data-row="${piece.row}"][data-col="${piece.col}"]`);
-        if (targetSlot) {
-            targetSlot.classList.add('target-hint');
+        if (piece) {
+            piece.canvas.classList.add('selected');
         }
     }
 
     handleSlotClick(row, col) {
-        if (!this.selectedPiece || this.selectedPiece.isPlaced) return;
-
-        if (this.selectedPiece.row === row && this.selectedPiece.col === col) {
-            this.placePieceInBoard(this.selectedPiece);
-        } else {
-            // Optional: wrong placement flash
-            const slot = this.boardContainer.querySelector(`.jigsaw-slot[data-row="${row}"][data-col="${col}"]`);
-            if (slot) {
-                slot.classList.add('wrong-flash');
-                setTimeout(() => slot.classList.remove('wrong-flash'), 400);
-            }
-        }
+        if (!this.selectedPiece) return;
+        this.placePieceInSlot(this.selectedPiece, row, col);
     }
 
-    placePieceInBoard(piece) {
+    placePieceInSlot(piece, targetRow, targetCol) {
+        const oldRow = piece.currentBoardRow;
+        const oldCol = piece.currentBoardCol;
+        const wasPlaced = piece.isPlaced;
+
+        // Check if another piece is already at target (targetRow, targetCol)
+        const existingPiece = this.pieces.find(p => p !== piece && p.isPlaced && p.currentBoardRow === targetRow && p.currentBoardCol === targetCol);
+
+        if (existingPiece) {
+            if (wasPlaced && oldRow !== null && oldCol !== null) {
+                // Swap positions! Existing piece moves to piece's old spot
+                existingPiece.currentBoardRow = oldRow;
+                existingPiece.currentBoardCol = oldCol;
+                existingPiece.canvas.style.left = `${oldCol * this.pieceWidth - existingPiece.padding}px`;
+                existingPiece.canvas.style.top = `${oldRow * this.pieceHeight - existingPiece.padding}px`;
+            } else {
+                // Return existing piece to tray
+                this.returnToTray(existingPiece);
+            }
+        }
+
+        // Place piece at target (targetRow, targetCol)
         piece.isPlaced = true;
+        piece.currentBoardRow = targetRow;
+        piece.currentBoardCol = targetCol;
+
         piece.canvas.classList.remove('selected');
         piece.canvas.classList.add('placed');
-        
-        // Remove from document body or tray, attach directly to board container
+
         piece.canvas.style.position = 'absolute';
-        piece.canvas.style.left = `${piece.col * this.pieceWidth - piece.padding}px`;
-        piece.canvas.style.top = `${piece.row * this.pieceHeight - piece.padding}px`;
+        piece.canvas.style.left = `${targetCol * this.pieceWidth - piece.padding}px`;
+        piece.canvas.style.top = `${targetRow * this.pieceHeight - piece.padding}px`;
         piece.canvas.style.zIndex = 10;
 
         this.boardContainer.appendChild(piece.canvas);
 
-        // Snap animation flash
-        piece.canvas.animate([
-            { transform: 'scale(1.18)', filter: 'brightness(1.5)' },
-            { transform: 'scale(1)', filter: 'brightness(1)' }
-        ], { duration: 250, easing: 'ease-out' });
-
-        // Play snap audio
         if (window.playSnapSound) window.playSnapSound();
 
         this.selectedPiece = null;
-        this.highlightTargetSlot(null);
-
-        this.placedCount++;
-        this.updateProgress();
-
-        if (this.placedCount >= this.totalPieces) {
-            setTimeout(() => this.onComplete(), 450);
-        }
+        this.checkWinCondition();
     }
 
     returnToTray(piece) {
-        piece.canvas.classList.remove('selected');
+        piece.isPlaced = false;
+        piece.currentBoardRow = null;
+        piece.currentBoardCol = null;
+
+        piece.canvas.classList.remove('selected', 'placed');
         piece.canvas.style.position = 'relative';
         piece.canvas.style.left = '0px';
         piece.canvas.style.top = '0px';
         piece.canvas.style.zIndex = '1';
         this.trayContainer.appendChild(piece.canvas);
-        
+
         if (this.selectedPiece === piece) {
             this.selectedPiece = null;
-            this.highlightTargetSlot(null);
         }
+
+        this.checkWinCondition();
     }
 
     showHint() {
-        const unplaced = this.pieces.filter(p => !p.isPlaced);
-        if (unplaced.length === 0) return;
+        const incorrectOrUnplaced = this.pieces.filter(p => !p.isPlaced || p.currentBoardRow !== p.row || p.currentBoardCol !== p.col);
+        if (incorrectOrUnplaced.length === 0) return;
 
-        const hintPiece = unplaced[Math.floor(Math.random() * unplaced.length)];
-        this.selectPiece(hintPiece);
-
-        // Scroll piece into view in tray if needed
-        hintPiece.canvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const hintPiece = incorrectOrUnplaced[Math.floor(Math.random() * incorrectOrUnplaced.length)];
+        this.placePieceInSlot(hintPiece, hintPiece.row, hintPiece.col);
     }
 
     autoSolve() {
-        const unplaced = this.pieces.filter(p => !p.isPlaced);
-        let delay = 0;
-        unplaced.forEach(piece => {
+        this.pieces.forEach((piece, idx) => {
             setTimeout(() => {
-                this.placePieceInBoard(piece);
-            }, delay);
-            delay += 60;
+                this.placePieceInSlot(piece, piece.row, piece.col);
+            }, idx * 30);
         });
     }
 
-    updateProgress() {
-        this.onProgress(this.placedCount, this.totalPieces);
+    checkWinCondition() {
+        const placedCount = this.pieces.filter(p => p.isPlaced).length;
+        this.onProgress(placedCount, this.totalPieces);
+
+        // Win ONLY if all 49 pieces are placed AND every piece is in its exact correct slot!
+        const allPlaced = this.pieces.length === this.totalPieces && this.pieces.every(p => p.isPlaced);
+        const allCorrect = this.pieces.every(p => p.isPlaced && p.currentBoardRow === p.row && p.currentBoardCol === p.col);
+
+        if (allPlaced && allCorrect) {
+            setTimeout(() => this.onComplete(), 450);
+        }
     }
 
     handleResize() {
         this.calculateDimensions();
         this.createBoardSlots();
         
-        // Reposition placed pieces
         this.pieces.forEach(piece => {
-            if (piece.isPlaced) {
+            if (piece.isPlaced && piece.currentBoardRow !== null && piece.currentBoardCol !== null) {
                 piece.canvas.style.width = `${this.pieceWidth + piece.padding * 2}px`;
                 piece.canvas.style.height = `${this.pieceHeight + piece.padding * 2}px`;
-                piece.canvas.style.left = `${piece.col * this.pieceWidth - piece.padding}px`;
-                piece.canvas.style.top = `${piece.row * this.pieceHeight - piece.padding}px`;
+                piece.canvas.style.left = `${piece.currentBoardCol * this.pieceWidth - piece.padding}px`;
+                piece.canvas.style.top = `${piece.currentBoardRow * this.pieceHeight - piece.padding}px`;
             }
         });
     }
