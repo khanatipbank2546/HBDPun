@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สุขสันต์วันเกิด ข้าวปั้น 🎂 | มหาจิ๊กซอว์ 5x5 & บทสวดอวยพรสายฮา</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- External Libraries: Three.js for 3D Badminton Court & Canvas-Confetti -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+    <!-- 3D Badminton Court Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Background Music (newmusic.mp4) -->
+    <audio id="bg-music" src="newmusic.mp4" loop preload="auto"></audio>
+
+    <!-- Audio Mute/Unmute Floating Button -->
+    <button id="audio-toggle" class="audio-toggle-btn" title="เปิด/ปิด เสียงเพลง">
+        🎵
+    </button>
+
+    <!-- Main Screen Container -->
+    <div class="screen-container">
+
+        <!-- SCREEN 1: COVER PAGE (หน้าปก ข้าวปั้น) -->
+        <div id="screen-intro" class="screen active">
+            <div class="glass-card" style="padding: 3rem 4rem;">
+                <h1 class="title-main" style="font-size: 3.8rem; margin-bottom: 2.2rem;">ข้าวปั้น</h1>
+                <button id="btn-start" class="btn-primary" style="font-size: 1.6rem; padding: 1.1rem 3.5rem;">
+                    เริ่ม
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: 7x7 JIGSAW PUZZLE GAME -->
+        <div id="screen-game" class="screen">
+            <div class="glass-card" style="width: 100%;">
+                <div class="game-header">
+                    <div class="game-title">🧩 ต่อจิ๊กซอว์ ข้าวปั้น 7x7</div>
+                    <div class="progress-pill">
+                        ชิ้นส่วน: <span id="placed-count" style="color: var(--primary-gold);">0</span> / 49
+                    </div>
+                </div>
+
+                <div class="game-body">
+                    <!-- Board Frame -->
+                    <div class="board-wrapper">
+                        <img id="ghost-image" src="pun.png" alt="Ghost Preview">
+                        <div id="jigsaw-board"></div>
+                    </div>
+
+                    <!-- Tray for Unplaced Pieces -->
+                    <div id="piece-tray" class="tray-wrapper"></div>
+
+                    <!-- Game Control Buttons -->
+                    <div class="controls-row">
+                        <button id="btn-hint" class="btn-secondary">
+                            💡 คำใบ้ (Hint)
+                        </button>
+                        <button id="btn-toggle-ghost" class="btn-secondary">
+                            👁️ ตัวอย่างภาพ
+                        </button>
+                        <button id="btn-shuffle" class="btn-secondary">
+                            🔀 สลับชิ้นส่วน
+                        </button>
+                        <button id="btn-auto-solve" class="btn-secondary btn-gold">
+                            ⚡ เฉลยทันที
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: GRAND BLESSING & MONK CHANT (บทสวดพระอวยพรยาวๆ 555) -->
+        <div id="screen-blessing" class="screen">
+            <div class="glass-card blessing-card">
+                <span class="badge-tag" style="border-color: var(--primary-gold); color: var(--primary-gold); box-shadow: 0 0 15px var(--gold-glow);">
+                    🎉 ภารกิจต่อจิ๊กซอว์สำเร็จแล้ว!
+                </span>
+
+                <h1 class="title-main" style="font-size: 2.2rem;">🙏 บทอวยพรสโมทนียกถา มหามงคล 🙏</h1>
+                <p style="color: #e2e8f0; font-size: 1.05rem;">ขอเชิญ "ข้าวปั้น" ประนมมือรับพรพระอวยพรวันเกิดสุดยาวและทรงพลัง (55555)</p>
+
+                <!-- Completed Picture -->
+                <div class="completed-photo-frame">
+                    <img src="pun.png" alt="ข้าวปั้น ชนะเลิศ">
+                </div>
+
+                <!-- Hilarious Monk Blessing Chant Scroll Box -->
+                <div class="blessing-scroll-box">
+                    <div class="chant-title">📜 พระคาถาอวยพรวันเกิดสายฮา & สิริมงคล 999 ประการ</div>
+                    <div id="chant-text-content" class="chant-text">
+                        โย ธัมโม ปะวะโร เสฏโฐ... 
+                        นะโม ตัสสะ ภะคะวะโต อะระหะโต สัมมาสัมพุทธัสสะ (3 จบ)
+                        
+                        ยถา วาริวะหา ปูรา ปะริปูเรนติ สาคะรัง 
+                        เอวะเมวะ อิโต ทินนัง เปตานัง อุปะกัปปะติ
+                        อิจฉิตัง ปัตถิตัง ตุมหัง ขิปปะเมวะ สะมิชฌะตุ 
+                        สัพเพ ปูเรนติ สังกัปปะ จันโท ปัณณะระโส ยถา มะณิ โชติระโส ยถา...
+
+                        สัพพีติโย วิวัชชันตุ สัพพะโรโค วินัสสะตุ 
+                        มา เต ภะวัตวันตะราโย สุขี ทีฆายุโก ภะวะ 
+                        อะภิวาทะนะสีลิสสะ นิจจัง วุฑฒาปะจายิโน 
+                        จัตตาโร ธัมมา วุฑฒันติ อายุ วัณโณ สุขัง พะลัง...
+
+                        อัญเชิญคาถาพาหุง-มหากา อภิมหาพรวันเกิดให้แก่ "ข้าวปั้น":
+                        ขออำนาจคุณพระศรีรัตนตรัย และสิ่งศักดิ์สิทธิ์ทั่วสากลโลก 
+                        ดลบันดาลให้ข้าวปั้นมีความสุขกาย สบายใจ โรคภัยไข้เจ็บไม่กล้ำกราย 
+                        ไม่ปวดหลัง ไม่ปวดเข่า ไม่ปวดเอว ตื่นมาสดชื่นกระปรี้กระเปร่า 
+                        
+                        ขอให้เบียร์ LEO ในตู้เย็นมีกินไม่หมดไม่สิ้น มีโชคลาภล้นบ้าน 
+                        เล่นแบดมินตันตบลูกสมัชดุจพายุหมุน หยอดลูกเน็ตลงตรงเส้นเป๊ะทุกแมตช์! 
+                        คิดเงินได้เงิน คิดทองได้ทอง การงานการเรียนราบรื่นไม่มีสะดุด 
+                        สาวรักสาวหลง เพื่อนฝูงรักใคร่ หล่อเท่ไร้เทียมทานดุจดั่งอเวนเจอร์ส!
+                        
+                        อะยุฑโฑ พะละโท ธีโร วัณณะโท ปะฏิภาณะโท 
+                        สุขัสสะ ทาตา เมธาวี สุขัง โส อะธิคัจฉะติ 
+                        อายุ ง ทัตวา พะลัง วัณณัง สุขัญจะ ปะฏิภาณะโท 
+                        ทีฆายุ ยะสะวา โหติ ยัตถะ ยัตถูปะปัชชะตีติฯ (สาธุ!)
+                    </div>
+                </div>
+
+                <!-- Sathu 99 Button & Counter -->
+                <div class="sathu-badge-container">
+                    <button id="btn-sathu" class="btn-primary btn-gold">
+                        🙏 กด สาธุ 99 (Sathu)
+                    </button>
+                    <div class="sathu-counter">
+                        🙏 <span id="sathu-count">99</span>
+                    </div>
+                </div>
+
+                <div class="controls-row" style="margin-top: 1.5rem;">
+                    <button id="btn-copy-blessing" class="btn-secondary">
+                        📋 คัดลอกบทสวด
+                    </button>
+                    <button id="btn-replay" class="btn-secondary">
+                        🔄 เล่นใหม่อีกครั้ง
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Scripts -->
+    <script src="court3d.js"></script>
+    <script src="jigsaw.js"></script>
+    <script src="app.js"></script>
+
+</body>
+</html>
