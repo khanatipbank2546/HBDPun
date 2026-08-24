@@ -59,13 +59,13 @@ class JigsawEngine {
         this.boardContainer.style.width = `${this.boardWidth}px`;
         this.boardContainer.style.height = `${this.boardHeight}px`;
 
-        // Update Ghost Image preview (faint 0.10 opacity)
+        // Update Ghost Image preview (faint 0.05 opacity)
         const ghostImg = document.getElementById('ghost-image');
         if (ghostImg) {
             ghostImg.src = this.imageSrc;
             ghostImg.style.width = `${this.boardWidth}px`;
             ghostImg.style.height = `${this.boardHeight}px`;
-            ghostImg.style.opacity = '0.10';
+            ghostImg.style.opacity = '0.05';
         }
     }
 

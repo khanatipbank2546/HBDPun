@@ -17,9 +17,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playBgMusic() {
         if (bgMusic && bgMusic.paused && !isMuted) {
-            bgMusic.play().catch(e => console.log('Audio autoplay prevented:', e));
+            bgMusic.play().then(() => {
+                console.log('Background music started playing automatically!');
+            }).catch(e => {
+                console.log('Autoplay deferred, waiting for user touch:', e);
+            });
         }
     }
+
+    // Try playing music immediately on load
+    playBgMusic();
+
+    // Start music immediately on first touch/click anywhere on the screen
+    const startMusicOnInteraction = () => {
+        playBgMusic();
+        getAudioContext();
+    };
+
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evtType => {
+        window.addEventListener(evtType, startMusicOnInteraction, { once: true });
+    });
 
     function getAudioContext() {
         if (!audioCtx) {
@@ -207,16 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hint Button
     document.getElementById('btn-hint').addEventListener('click', () => {
         if (jigsawInstance) jigsawInstance.showHint();
-    });
-
-    // Toggle Ghost Preview (Single Mode: 0.10 Faint vs 0.00 Hidden)
-    let isGhostVisible = true;
-    const ghostImg = document.getElementById('ghost-image');
-    document.getElementById('btn-toggle-ghost').addEventListener('click', () => {
-        isGhostVisible = !isGhostVisible;
-        if (ghostImg) {
-            ghostImg.style.opacity = isGhostVisible ? '0.10' : '0.00';
-        }
     });
 
     // Shuffle Button
