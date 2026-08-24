@@ -338,7 +338,7 @@ class JigsawEngine {
         }
         this.selectedPiece = piece;
         piece.canvas.classList.add('selected');
-        this.highlightTargetSlot(piece);
+        // Target slot glowing hint removed as requested
     }
 
     highlightTargetSlot(piece) {

@@ -226,6 +226,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (jigsawInstance) jigsawInstance.showHint();
     });
 
+    // Image Preview Modal Listeners
+    const previewModal = document.getElementById('preview-modal');
+    const btnPreviewModal = document.getElementById('btn-preview-modal');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+
+    if (btnPreviewModal && previewModal) {
+        btnPreviewModal.addEventListener('click', () => {
+            previewModal.style.display = 'flex';
+        });
+    }
+
+    if (btnCloseModal && previewModal) {
+        btnCloseModal.addEventListener('click', () => {
+            previewModal.style.display = 'none';
+        });
+    }
+
+    if (previewModal) {
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                previewModal.style.display = 'none';
+            }
+        });
+    }
+
     // Shuffle Button
     document.getElementById('btn-shuffle').addEventListener('click', () => {
         if (jigsawInstance) jigsawInstance.shuffleTray();
