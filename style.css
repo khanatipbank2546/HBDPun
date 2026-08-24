@@ -299,28 +299,70 @@ h2.subtitle {
     filter: none;
 }
 
+/* Tray Container Box with Scroll Arrows */
+.tray-container-box {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tray-scroll-btn {
+    background: linear-gradient(135deg, var(--badminton-green) 0%, #059669 100%);
+    border: 2px solid var(--primary-gold);
+    color: #ffffff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    width: 48px;
+    height: 64px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5), 0 0 15px var(--green-glow);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    z-index: 20;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tray-scroll-btn:active {
+    transform: scale(0.92);
+    background: var(--primary-gold);
+    color: #000000;
+}
+
 /* Piece Tray */
 .tray-wrapper {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    flex: 1;
+    background: rgba(0, 0, 0, 0.5);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    padding: 0.8rem;
-    min-height: 110px;
-    max-height: 160px;
+    padding: 0.8rem 1rem;
+    min-height: 130px;
+    max-height: 175px;
     overflow-x: auto;
     overflow-y: hidden;
     display: flex;
     align-items: center;
-    gap: 0.8rem;
+    gap: 1.2rem;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
 }
 
 .tray-wrapper::-webkit-scrollbar {
-    height: 6px;
+    height: 10px;
+}
+.tray-wrapper::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
 }
 .tray-wrapper::-webkit-scrollbar-thumb {
-    background: var(--badminton-green);
+    background: linear-gradient(90deg, var(--badminton-green), var(--primary-gold));
     border-radius: 10px;
 }
 

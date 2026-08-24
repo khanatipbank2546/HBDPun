@@ -257,6 +257,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Piece Tray Scroll Arrow Buttons
+    const trayEl = document.getElementById('piece-tray');
+    const btnTrayLeft = document.getElementById('btn-tray-left');
+    const btnTrayRight = document.getElementById('btn-tray-right');
+
+    if (btnTrayLeft && trayEl) {
+        btnTrayLeft.addEventListener('click', () => {
+            trayEl.scrollBy({ left: -220, behavior: 'smooth' });
+        });
+    }
+
+    if (btnTrayRight && trayEl) {
+        btnTrayRight.addEventListener('click', () => {
+            trayEl.scrollBy({ left: 220, behavior: 'smooth' });
+        });
+    }
+
     // Shuffle Button
     document.getElementById('btn-shuffle').addEventListener('click', () => {
         if (jigsawInstance) jigsawInstance.shuffleTray();
