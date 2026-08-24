@@ -10,32 +10,38 @@ document.addEventListener('DOMContentLoaded', () => {
         window.initCourt3D();
     }
 
-    // 2. Background Music (newmusic.mp4) & Web Audio API Synthesizer
+    // 2. Background Music (newmusic.mp4 - Always On)
     const bgMusic = document.getElementById('bg-music');
     let audioCtx = null;
-    let isMuted = false;
 
-    function playBgMusic() {
-        if (bgMusic && bgMusic.paused && !isMuted) {
+    function forcePlayMusic() {
+        if (bgMusic) {
             bgMusic.play().then(() => {
-                console.log('Background music started playing automatically!');
-            }).catch(e => {
-                console.log('Autoplay deferred, waiting for user touch:', e);
+                bgMusic.muted = false;
+            }).catch(() => {
+                // Autoplay workaround: play muted first then unmute on first touch
+                bgMusic.muted = true;
+                bgMusic.play().then(() => {
+                    const unmute = () => {
+                        bgMusic.muted = false;
+                        window.removeEventListener('pointerdown', unmute);
+                        window.removeEventListener('touchstart', unmute);
+                        window.removeEventListener('click', unmute);
+                    };
+                    window.addEventListener('pointerdown', unmute, { once: true });
+                    window.addEventListener('touchstart', unmute, { once: true });
+                    window.addEventListener('click', unmute, { once: true });
+                }).catch(() => {});
             });
         }
     }
 
-    // Try playing music immediately on load
-    playBgMusic();
+    // Force play immediately on load and on any touch
+    forcePlayMusic();
+    window.addEventListener('load', forcePlayMusic);
 
-    // Start music immediately on first touch/click anywhere on the screen
-    const startMusicOnInteraction = () => {
-        playBgMusic();
-        getAudioContext();
-    };
-
-    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evtType => {
-        window.addEventListener(evtType, startMusicOnInteraction, { once: true });
+    ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll'].forEach(evtType => {
+        window.addEventListener(evtType, forcePlayMusic);
     });
 
     function getAudioContext() {
