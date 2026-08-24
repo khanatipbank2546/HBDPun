@@ -279,23 +279,23 @@ h2.subtitle {
 /* Jigsaw Pieces */
 .jigsaw-piece {
     cursor: grab;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+    transition: transform 0.15s ease;
     touch-action: none;
     -webkit-touch-callout: none;
+    will-change: transform, left, top;
+    transform: translateZ(0);
 }
 
 .jigsaw-piece:hover {
-    transform: scale(1.06);
+    transform: scale(1.06) translateZ(0);
     z-index: 100;
-    filter: drop-shadow(0 8px 16px rgba(255, 215, 0, 0.6));
 }
 
 .jigsaw-piece.selected {
     outline: 3px solid var(--primary-gold);
     border-radius: 8px;
     box-shadow: 0 0 20px var(--primary-gold);
-    transform: scale(1.1);
+    transform: scale(1.1) translateZ(0);
     z-index: 200;
 }
 
