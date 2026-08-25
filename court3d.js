@@ -4,6 +4,11 @@
  */
 
 window.initCourt3D = function() {
+    if (typeof THREE === 'undefined') {
+        console.warn('Three.js library is not available.');
+        return;
+    }
+
     const canvas = document.getElementById('bg-canvas');
     if (!canvas) return;
 
