@@ -1,7 +1,8 @@
 /**
  * jigsaw.js - 7x7 Jigsaw Puzzle Engine for Khao Pun Birthday App
- * Supports 7x7 grid (49 pieces), any-slot placement, position swapping,
- * return to tray, and completion detection ONLY when all pieces match their correct slots.
+ * Supports 7x7 grid (49 pieces), seamless interlocking tab graphics,
+ * correct piece locking (Requirement 1), any-slot placement, position swapping,
+ * and completion detection ONLY when all pieces match their correct slots.
  */
 
 class JigsawEngine {
@@ -96,7 +97,6 @@ class JigsawEngine {
                 slot.style.left = `${c * this.pieceWidth}px`;
                 slot.style.top = `${r * this.pieceHeight}px`;
 
-                // Click slot to place selected piece
                 slot.addEventListener('click', () => this.handleSlotClick(r, c));
                 this.boardContainer.appendChild(slot);
             }
@@ -152,6 +152,10 @@ class JigsawEngine {
         const sourceH = this.img.height / this.rows;
         const padding = Math.min(this.pieceWidth, this.pieceHeight) * 0.35;
 
+        // Image sampling scale factors
+        const scaleX = this.img.width / this.boardWidth;
+        const scaleY = this.img.height / this.boardHeight;
+
         for (let r = 0; r < this.rows; r++) {
             for (let c = 0; c < this.cols; c++) {
                 const id = r * this.cols + c;
@@ -177,18 +181,22 @@ class JigsawEngine {
                 ctx.save();
                 ctx.translate(padding, padding);
 
+                // Clip path for interlocking jigsaw tab shape
                 this.drawJigsawPiecePath(ctx, this.pieceWidth, this.pieceHeight, topEdge, rightEdge, bottomEdge, leftEdge);
                 ctx.clip();
 
-                ctx.drawImage(
-                    this.img,
-                    c * sourceW, r * sourceH, sourceW, sourceH,
-                    0, 0, this.pieceWidth, this.pieceHeight
-                );
+                // REQUIREMENT 2: Sample exact image pixels including padding so tabs seamlessly connect!
+                const srcX = (c * sourceW) - (padding * scaleX);
+                const srcY = (r * sourceH) - (padding * scaleY);
+                const srcW = sourceW + (padding * 2 * scaleX);
+                const srcH = sourceH + (padding * 2 * scaleY);
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
+                const dstX = -padding;
+                const dstY = -padding;
+                const dstW = this.pieceWidth + (padding * 2);
+                const dstH = this.pieceHeight + (padding * 2);
+
+                ctx.drawImage(this.img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
 
                 ctx.restore();
 
@@ -201,6 +209,7 @@ class JigsawEngine {
                     canvas: canvas,
                     padding: padding,
                     isPlaced: false,
+                    isLocked: false,
                     topEdge, rightEdge, bottomEdge, leftEdge
                 };
 
@@ -230,6 +239,7 @@ class JigsawEngine {
         // Click to select
         el.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (piece.isLocked) return; // REQUIREMENT 1: Cannot click or move locked piece!
             if (this.selectedPiece === piece) {
                 this.selectPiece(null);
             } else {
@@ -242,6 +252,7 @@ class JigsawEngine {
         let startX, startY, origLeft, origTop;
 
         const onStart = (e) => {
+            if (piece.isLocked) return; // REQUIREMENT 1: Cannot drag locked piece!
             isDragging = true;
             this.selectPiece(piece);
 
@@ -310,6 +321,7 @@ class JigsawEngine {
     }
 
     selectPiece(piece) {
+        if (piece && piece.isLocked) return; // REQUIREMENT 1: Cannot select locked piece!
         if (this.selectedPiece) {
             this.selectedPiece.canvas.classList.remove('selected');
         }
@@ -320,11 +332,13 @@ class JigsawEngine {
     }
 
     handleSlotClick(row, col) {
-        if (!this.selectedPiece) return;
+        if (!this.selectedPiece || this.selectedPiece.isLocked) return;
         this.placePieceInSlot(this.selectedPiece, row, col);
     }
 
     placePieceInSlot(piece, targetRow, targetCol) {
+        if (piece.isLocked) return;
+
         const oldRow = piece.currentBoardRow;
         const oldCol = piece.currentBoardCol;
         const wasPlaced = piece.isPlaced;
@@ -332,9 +346,20 @@ class JigsawEngine {
         // Check if another piece is already at target (targetRow, targetCol)
         const existingPiece = this.pieces.find(p => p !== piece && p.isPlaced && p.currentBoardRow === targetRow && p.currentBoardCol === targetCol);
 
+        // If target slot has a locked piece, do not allow placing over it!
+        if (existingPiece && existingPiece.isLocked) {
+            if (wasPlaced && oldRow !== null && oldCol !== null) {
+                piece.canvas.style.left = `${oldCol * this.pieceWidth - piece.padding}px`;
+                piece.canvas.style.top = `${oldRow * this.pieceHeight - piece.padding}px`;
+            } else {
+                this.returnToTray(piece);
+            }
+            return;
+        }
+
         if (existingPiece) {
             if (wasPlaced && oldRow !== null && oldCol !== null) {
-                // Swap positions! Existing piece moves to piece's old spot
+                // Swap! Existing piece moves to piece's old spot
                 existingPiece.currentBoardRow = oldRow;
                 existingPiece.currentBoardCol = oldCol;
                 existingPiece.canvas.style.left = `${oldCol * this.pieceWidth - existingPiece.padding}px`;
@@ -360,6 +385,14 @@ class JigsawEngine {
 
         this.boardContainer.appendChild(piece.canvas);
 
+        // REQUIREMENT 1: Lock piece PERMANENTLY if placed in its EXACT correct spot!
+        if (piece.currentBoardRow === piece.row && piece.currentBoardCol === piece.col) {
+            piece.isLocked = true;
+            piece.canvas.classList.add('locked-correct');
+            piece.canvas.style.zIndex = 5;
+            piece.canvas.style.pointerEvents = 'none';
+        }
+
         if (window.playSnapSound) window.playSnapSound();
 
         this.selectedPiece = null;
@@ -367,6 +400,8 @@ class JigsawEngine {
     }
 
     returnToTray(piece) {
+        if (piece.isLocked) return;
+
         piece.isPlaced = false;
         piece.currentBoardRow = null;
         piece.currentBoardCol = null;
@@ -386,7 +421,7 @@ class JigsawEngine {
     }
 
     showHint() {
-        const incorrectOrUnplaced = this.pieces.filter(p => !p.isPlaced || p.currentBoardRow !== p.row || p.currentBoardCol !== p.col);
+        const incorrectOrUnplaced = this.pieces.filter(p => !p.isLocked);
         if (incorrectOrUnplaced.length === 0) return;
 
         const hintPiece = incorrectOrUnplaced[Math.floor(Math.random() * incorrectOrUnplaced.length)];
@@ -397,19 +432,20 @@ class JigsawEngine {
         this.pieces.forEach((piece, idx) => {
             setTimeout(() => {
                 this.placePieceInSlot(piece, piece.row, piece.col);
-            }, idx * 30);
+            }, idx * 25);
         });
     }
 
     checkWinCondition() {
         const placedCount = this.pieces.filter(p => p.isPlaced).length;
+        const lockedCount = this.pieces.filter(p => p.isLocked).length;
+        
         this.onProgress(placedCount, this.totalPieces);
 
-        // Win ONLY if all 49 pieces are placed AND every piece is in its exact correct slot!
-        const allPlaced = this.pieces.length === this.totalPieces && this.pieces.every(p => p.isPlaced);
-        const allCorrect = this.pieces.every(p => p.isPlaced && p.currentBoardRow === p.row && p.currentBoardCol === p.col);
+        // Win ONLY if all 49 pieces are locked in their correct slots!
+        const allCorrect = this.pieces.length === this.totalPieces && this.pieces.every(p => p.isLocked);
 
-        if (allPlaced && allCorrect) {
+        if (allCorrect) {
             setTimeout(() => this.onComplete(), 450);
         }
     }

@@ -295,8 +295,15 @@ h2.subtitle {
 }
 
 .jigsaw-piece.placed {
-    cursor: default;
+    cursor: grab;
     filter: none;
+}
+
+.jigsaw-piece.locked-correct {
+    cursor: default !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 /* Piece Tray & Page Navigation */
