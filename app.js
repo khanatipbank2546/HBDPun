@@ -257,21 +257,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Piece Tray Scroll Arrow Buttons
+    // Piece Tray Page Navigation System
     const trayEl = document.getElementById('piece-tray');
-    const btnTrayLeft = document.getElementById('btn-tray-left');
-    const btnTrayRight = document.getElementById('btn-tray-right');
+    const btnTrayPrev = document.getElementById('btn-tray-prev');
+    const btnTrayNext = document.getElementById('btn-tray-next');
+    const trayPageBadge = document.getElementById('tray-page-badge');
 
-    if (btnTrayLeft && trayEl) {
-        btnTrayLeft.addEventListener('click', () => {
-            trayEl.scrollBy({ left: -220, behavior: 'smooth' });
+    function updateTrayPageInfo() {
+        if (!trayEl) return;
+        const totalScrollable = trayEl.scrollWidth - trayEl.clientWidth;
+        if (totalScrollable <= 10) {
+            if (trayPageBadge) trayPageBadge.textContent = 'หน้า 1 / 1';
+            return;
+        }
+        const pageSize = trayEl.clientWidth * 0.82;
+        const totalPages = Math.max(1, Math.ceil(trayEl.scrollWidth / pageSize));
+        const currentPage = Math.min(totalPages, Math.max(1, Math.round(trayEl.scrollLeft / pageSize) + 1));
+        
+        if (trayPageBadge) {
+            trayPageBadge.textContent = `หน้า ${currentPage} / ${totalPages}`;
+        }
+    }
+
+    if (btnTrayPrev && trayEl) {
+        btnTrayPrev.addEventListener('click', () => {
+            const pageSize = trayEl.clientWidth * 0.82;
+            trayEl.scrollBy({ left: -pageSize, behavior: 'smooth' });
+            setTimeout(updateTrayPageInfo, 350);
         });
     }
 
-    if (btnTrayRight && trayEl) {
-        btnTrayRight.addEventListener('click', () => {
-            trayEl.scrollBy({ left: 220, behavior: 'smooth' });
+    if (btnTrayNext && trayEl) {
+        btnTrayNext.addEventListener('click', () => {
+            const pageSize = trayEl.clientWidth * 0.82;
+            trayEl.scrollBy({ left: pageSize, behavior: 'smooth' });
+            setTimeout(updateTrayPageInfo, 350);
         });
+    }
+
+    if (trayEl) {
+        trayEl.addEventListener('scroll', updateTrayPageInfo);
     }
 
     // Shuffle Button

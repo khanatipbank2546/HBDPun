@@ -299,71 +299,75 @@ h2.subtitle {
     filter: none;
 }
 
-/* Tray Container Box with Scroll Arrows */
-.tray-container-box {
-    position: relative;
+/* Piece Tray & Page Navigation */
+.tray-section {
     width: 100%;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.6rem;
 }
 
-.tray-scroll-btn {
-    background: linear-gradient(135deg, var(--badminton-green) 0%, #059669 100%);
-    border: 2px solid var(--primary-gold);
-    color: #ffffff;
-    font-size: 1.4rem;
-    font-weight: 800;
-    width: 48px;
-    height: 64px;
-    border-radius: 16px;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5), 0 0 15px var(--green-glow);
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    z-index: 20;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.tray-scroll-btn:active {
-    transform: scale(0.92);
-    background: var(--primary-gold);
-    color: #000000;
-}
-
-/* Piece Tray */
 .tray-wrapper {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    background: rgba(0, 0, 0, 0.55);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 0.8rem 1rem;
-    min-height: 130px;
-    max-height: 175px;
-    overflow-x: auto;
+    min-height: 125px;
+    max-height: 165px;
+    overflow-x: hidden; /* Navigate strictly via buttons */
     overflow-y: hidden;
     display: flex;
     align-items: center;
     gap: 1.2rem;
     scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
 }
 
-.tray-wrapper::-webkit-scrollbar {
-    height: 10px;
+.tray-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 0.8rem;
 }
-.tray-wrapper::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 10px;
+
+.tray-nav-btn {
+    flex: 1;
+    background: linear-gradient(135deg, var(--badminton-green) 0%, #059669 100%);
+    border: 2px solid var(--primary-gold);
+    color: #ffffff;
+    font-family: var(--font-main);
+    font-size: 1.15rem;
+    font-weight: 700;
+    padding: 0.7rem 1.2rem;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4), 0 0 15px var(--green-glow);
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
-.tray-wrapper::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, var(--badminton-green), var(--primary-gold));
-    border-radius: 10px;
+
+.tray-nav-btn:active {
+    transform: scale(0.95);
+    background: var(--primary-gold);
+    color: #000000;
+}
+
+.tray-page-badge {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--primary-gold);
+    color: var(--primary-gold);
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 0 10px var(--gold-glow);
+    white-space: nowrap;
 }
 
 .controls-row {

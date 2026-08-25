@@ -55,11 +55,19 @@
                         <div id="jigsaw-board"></div>
                     </div>
 
-                    <!-- Tray for Unplaced Pieces with Big Touch Scroll Arrows -->
-                    <div class="tray-container-box">
-                        <button id="btn-tray-left" class="tray-scroll-btn" title="เลื่อนซ้าย">◀</button>
+                    <!-- Tray for Unplaced Pieces with Big Touch Navigation Buttons -->
+                    <div class="tray-section">
                         <div id="piece-tray" class="tray-wrapper"></div>
-                        <button id="btn-tray-right" class="tray-scroll-btn" title="เลื่อนขวา">▶</button>
+                        
+                        <div class="tray-nav-bar">
+                            <button id="btn-tray-prev" class="tray-nav-btn">
+                                ◀️ เลื่อนซ้าย
+                            </button>
+                            <span id="tray-page-badge" class="tray-page-badge">หน้า 1 / 4</span>
+                            <button id="btn-tray-next" class="tray-nav-btn">
+                                เลื่อนขวา ▶️
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Game Control Buttons -->
