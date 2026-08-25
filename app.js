@@ -7,17 +7,27 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initialize 3D Badminton Court Background
     if (window.initCourt3D) {
-        window.initCourt3D();
+        try {
+            window.initCourt3D();
+        } catch (e) {
+            console.error('Court3D Init Error:', e);
+        }
     }
 
     // 2. Background Music (newmusic.mp4 - Always On)
     const bgMusic = document.getElementById('bg-music');
     let audioCtx = null;
+    let musicStarted = false;
 
     function forcePlayMusic() {
-        if (bgMusic) {
-            bgMusic.play().then(() => {
-                bgMusic.muted = false;
+        if (!bgMusic) return;
+        
+        bgMusic.muted = false;
+        const playPromise = bgMusic.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                musicStarted = true;
             }).catch(() => {
                 // Autoplay workaround: play muted first then unmute on first touch
                 bgMusic.muted = true;
@@ -36,30 +46,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Force play immediately on load and on any touch
+    // Trigger music on load and on any interaction
     forcePlayMusic();
     window.addEventListener('load', forcePlayMusic);
 
-    ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll'].forEach(evtType => {
-        window.addEventListener(evtType, forcePlayMusic);
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evtType => {
+        window.addEventListener(evtType, forcePlayMusic, { passive: true });
     });
 
     function getAudioContext() {
-        if (!audioCtx) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioCtx = new AudioContext();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+        try {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        } catch (e) { console.error(e); }
         return audioCtx;
     }
 
     // Play Piece Snap Sound
     window.playSnapSound = function() {
-        if (isMuted) return;
         try {
             const ctx = getAudioContext();
+            if (!ctx) return;
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
@@ -80,11 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Play Temple Bell / Gong Sound (สำหรับบทสวดพระ)
     function playTempleBell() {
-        if (isMuted) return;
         try {
             const ctx = getAudioContext();
+            if (!ctx) return;
             
-            // Fundamental tone + harmonics
             const freqs = [329.63, 659.25, 987.77];
             freqs.forEach((freq, idx) => {
                 const osc = ctx.createOscillator();
@@ -108,10 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Play Victory Fanfare Sound
     function playVictoryFanfare() {
-        if (isMuted) return;
         try {
             const ctx = getAudioContext();
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            if (!ctx) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((note, idx) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
@@ -132,21 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error(e); }
     }
 
-    // Audio Toggle Handler (Music & SFX)
-    const audioBtn = document.getElementById('audio-toggle');
-    audioBtn.addEventListener('click', () => {
-        isMuted = !isMuted;
-        if (isMuted) {
-            if (bgMusic) bgMusic.pause();
-            audioBtn.textContent = '🔇';
-            audioBtn.style.opacity = '0.5';
-        } else {
-            if (bgMusic) bgMusic.play();
-            audioBtn.textContent = '🎵';
-            audioBtn.style.opacity = '1';
-        }
-    });
-
     // 3. Screen Navigation
     const screens = {
         intro: document.getElementById('screen-intro'),
@@ -155,7 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function showScreen(screenName) {
-        Object.values(screens).forEach(s => s.classList.remove('active'));
+        Object.values(screens).forEach(s => {
+            if (s) s.classList.remove('active');
+        });
         if (screens[screenName]) {
             screens[screenName].classList.add('active');
         }
@@ -166,25 +164,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startJigsawGame() {
         getAudioContext();
-        playBgMusic();
+        forcePlayMusic();
         showScreen('game');
 
         const boardEl = document.getElementById('jigsaw-board');
         const trayEl = document.getElementById('piece-tray');
 
-        jigsawInstance = new JigsawEngine({
-            rows: 7,
-            cols: 7,
-            imageSrc: 'pun.png',
-            boardContainer: boardEl,
-            trayContainer: trayEl,
-            onProgress: (placed, total) => {
-                document.getElementById('placed-count').textContent = placed;
-            },
-            onComplete: () => {
-                handleJigsawComplete();
-            }
-        });
+        if (boardEl && trayEl && typeof JigsawEngine !== 'undefined') {
+            jigsawInstance = new JigsawEngine({
+                rows: 7,
+                cols: 7,
+                imageSrc: 'pun.png',
+                boardContainer: boardEl,
+                trayContainer: trayEl,
+                onProgress: (placed, total) => {
+                    const placedEl = document.getElementById('placed-count');
+                    if (placedEl) placedEl.textContent = placed;
+                },
+                onComplete: () => {
+                    handleJigsawComplete();
+                }
+            });
+        }
     }
 
     // 5. Victory & Blessing Flow
@@ -209,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
             fire(0.1, { spread: 120, startVelocity: 45 });
         }
 
-        // Switch to Blessing Screen after slight delay
         setTimeout(() => {
             showScreen('blessing');
             playTempleBell();
@@ -222,15 +222,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6. Interactive Event Listeners
-    // Start Button
-    document.getElementById('btn-start').addEventListener('click', () => {
-        startJigsawGame();
-    });
+    // Start Button (Failsafe for both Click & Touch)
+    const btnStart = document.getElementById('btn-start');
+    if (btnStart) {
+        const onStartClick = (e) => {
+            if (e) e.preventDefault();
+            forcePlayMusic();
+            startJigsawGame();
+        };
+
+        btnStart.addEventListener('click', onStartClick);
+        btnStart.addEventListener('touchend', onStartClick);
+    }
 
     // Hint Button
-    document.getElementById('btn-hint').addEventListener('click', () => {
-        if (jigsawInstance) jigsawInstance.showHint();
-    });
+    const btnHint = document.getElementById('btn-hint');
+    if (btnHint) {
+        btnHint.addEventListener('click', () => {
+            if (jigsawInstance) jigsawInstance.showHint();
+        });
+    }
 
     // Image Preview Modal Listeners
     const previewModal = document.getElementById('preview-modal');
@@ -300,54 +311,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Shuffle Button
-    document.getElementById('btn-shuffle').addEventListener('click', () => {
-        if (jigsawInstance) jigsawInstance.shuffleTray();
-    });
+    const btnShuffle = document.getElementById('btn-shuffle');
+    if (btnShuffle) {
+        btnShuffle.addEventListener('click', () => {
+            if (jigsawInstance) jigsawInstance.shuffleTray();
+        });
+    }
 
     // Auto Solve Button
-    document.getElementById('btn-auto-solve').addEventListener('click', () => {
-        if (jigsawInstance) jigsawInstance.autoSolve();
-    });
+    const btnAutoSolve = document.getElementById('btn-auto-solve');
+    if (btnAutoSolve) {
+        btnAutoSolve.addEventListener('click', () => {
+            if (jigsawInstance) jigsawInstance.autoSolve();
+        });
+    }
 
     // Sathu 99 Button
     let sathuCount = 99;
-    document.getElementById('btn-sathu').addEventListener('click', (e) => {
-        sathuCount += 1;
-        document.getElementById('sathu-count').textContent = sathuCount;
-        playTempleBell();
+    const btnSathu = document.getElementById('btn-sathu');
+    if (btnSathu) {
+        btnSathu.addEventListener('click', (e) => {
+            sathuCount += 1;
+            const sathuCountEl = document.getElementById('sathu-count');
+            if (sathuCountEl) sathuCountEl.textContent = sathuCount;
+            playTempleBell();
 
-        // Spawn floating "🙏 สาธุ 99" animation
-        const sathuTag = document.createElement('div');
-        sathuTag.className = 'floating-sathu';
-        sathuTag.textContent = `🙏 สาธุ ${sathuCount}`;
-        
-        // Position near click or random horizontal
-        const posX = e.clientX || (window.innerWidth / 2 + (Math.random() * 200 - 100));
-        const posY = e.clientY || (window.innerHeight / 2);
+            const sathuTag = document.createElement('div');
+            sathuTag.className = 'floating-sathu';
+            sathuTag.textContent = `🙏 สาธุ ${sathuCount}`;
+            
+            const posX = e.clientX || (window.innerWidth / 2);
+            const posY = e.clientY || (window.innerHeight / 2);
 
-        sathuTag.style.left = `${posX - 40}px`;
-        sathuTag.style.top = `${posY - 30}px`;
+            sathuTag.style.left = `${posX - 40}px`;
+            sathuTag.style.top = `${posY - 30}px`;
 
-        document.body.appendChild(sathuTag);
+            document.body.appendChild(sathuTag);
 
-        setTimeout(() => sathuTag.remove(), 2000);
-    });
+            setTimeout(() => sathuTag.remove(), 2000);
+        });
+    }
 
     // Copy Blessing Text Button
-    document.getElementById('btn-copy-blessing').addEventListener('click', () => {
-        const chantText = document.getElementById('chant-text-content').innerText;
-        navigator.clipboard.writeText(chantText).then(() => {
-            const btn = document.getElementById('btn-copy-blessing');
-            const orig = btn.innerHTML;
-            btn.innerHTML = '✅ คัดลอกเรียบร้อย!';
-            setTimeout(() => btn.innerHTML = orig, 2000);
-        }).catch(err => {
-            alert('คัดลอกบทสวดเรียบร้อยแล้ว!');
+    const btnCopy = document.getElementById('btn-copy-blessing');
+    if (btnCopy) {
+        btnCopy.addEventListener('click', () => {
+            const chantEl = document.getElementById('chant-text-content');
+            const chantText = chantEl ? chantEl.innerText : '';
+            navigator.clipboard.writeText(chantText).then(() => {
+                const orig = btnCopy.innerHTML;
+                btnCopy.innerHTML = '✅ คัดลอกเรียบร้อย!';
+                setTimeout(() => btnCopy.innerHTML = orig, 2000);
+            }).catch(() => {
+                alert('คัดลอกบทสวดเรียบร้อยแล้ว!');
+            });
         });
-    });
+    }
 
     // Replay Button
-    document.getElementById('btn-replay').addEventListener('click', () => {
-        showScreen('intro');
-    });
+    const btnReplay = document.getElementById('btn-replay');
+    if (btnReplay) {
+        btnReplay.addEventListener('click', () => {
+            showScreen('intro');
+        });
+    }
 });
