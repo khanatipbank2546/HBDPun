@@ -163,6 +163,24 @@
         }
     }
 
+    let autoScrollInterval = null;
+
+    function startAutoScrollBlessing() {
+        const scrollBox = document.querySelector('.blessing-scroll-box');
+        if (!scrollBox) return;
+        scrollBox.scrollTop = 0;
+
+        if (autoScrollInterval) clearInterval(autoScrollInterval);
+
+        autoScrollInterval = setInterval(() => {
+            if (scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight - 4) {
+                scrollBox.scrollTop = 0;
+            } else {
+                scrollBox.scrollTop += 1;
+            }
+        }, 35);
+    }
+
     function handleJigsawComplete() {
         playVictoryFanfare();
 
@@ -186,11 +204,7 @@
         setTimeout(() => {
             showScreen('blessing');
             playTempleBell();
-
-            const scrollBox = document.querySelector('.blessing-scroll-box');
-            if (scrollBox) {
-                scrollBox.scrollTop = 0;
-            }
+            startAutoScrollBlessing();
         }, 1200);
     }
 
@@ -297,19 +311,17 @@
             trayEl.addEventListener('scroll', updateTrayPageInfo);
         }
 
-        // Sathu 99 Button
-        let sathuCount = 99;
+        // Sathu 99 Button (STRICTLY 99 ALWAYS as requested)
         const btnSathu = document.getElementById('btn-sathu');
         if (btnSathu) {
             btnSathu.onclick = (e) => {
-                sathuCount += 1;
                 const sathuCountEl = document.getElementById('sathu-count');
-                if (sathuCountEl) sathuCountEl.textContent = sathuCount;
+                if (sathuCountEl) sathuCountEl.textContent = '99';
                 playTempleBell();
 
                 const sathuTag = document.createElement('div');
                 sathuTag.className = 'floating-sathu';
-                sathuTag.textContent = `🙏 สาธุ ${sathuCount}`;
+                sathuTag.textContent = '🙏 สาธุ 99';
                 
                 const posX = e.clientX || (window.innerWidth / 2);
                 const posY = e.clientY || (window.innerHeight / 2);
